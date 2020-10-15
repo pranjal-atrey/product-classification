@@ -52,6 +52,7 @@ while not is_translated:
             f2 = fholder
 
 end_time = datetime.datetime.now()
+print(datetime.datetime.now())
 print(f"[SUCCESS IN {datetime.datetime.now() - start_time} SECONDS]")
 print(f"{fileToTranslate} has been translated and saved into filename \"{fn1}\".")
 print("Press enter to exit.")
