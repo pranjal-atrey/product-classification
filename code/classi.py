@@ -32,7 +32,6 @@ def train(f, method, *args, **kwargs):
         for line in reader:
             pridet.append(line[0])
             values.append(line[2])
-        print('Read in from file...')
         # Select random test elements (if applicable)
         if test:
             for r in range(int(len(pridet) * (test/100))+1):
