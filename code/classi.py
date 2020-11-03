@@ -38,7 +38,7 @@ def train(f, method, *args, **kwargs):
                 randomNumber = rand.randint(0, len(pridet)-1)
                 testpridet.append(pridet.pop(randomNumber))
                 testvalues.append(values.pop(randomNumber))
-            print(len(testpridet),'data items witheld for testing...')
+            print(len(testpridet),'data items withheld for testing...')
     
         count_vect = CountVectorizer()
         # This is where the bag of words is created:
