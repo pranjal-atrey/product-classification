@@ -6,7 +6,7 @@ Syntactically speaking, training a classifier on a file is as simple as passing 
 As an example, training a Naïve Bayes-based classifier on data in a file data_file would look like this: 
 
 ```python
-train(data_file, method = ”nb”);
+train(data_file, "nb");
 ```
 
 The *method* parameter dictates the type of classifier that will be trained on the data; see **Which Classifier Should I Use?** for help picking a method, as well as train’s documentation for more information.
@@ -16,7 +16,7 @@ Including the *test* parameter allows the user to set aside a certain percentage
 Testing the accuracy of the classifier in the above example at 15% would look like this:
 
 ```python
-train(data_file, method=”nb”, test=15)
+train(data_file, ”nb”, test=15)
 ```
 
 Once a classifier has been trained, classifying Strings is as simple as passing the Strings – either separately or as an array – along with the classifier object as arguments in *classify*.
@@ -52,13 +52,13 @@ When passing multiple files to train it’s important that the primary determina
 
 ## Method List
 
- - train(files, method=”classifier_method”, test=%_test_data)
+ - train(files, ”classifier_method_key”, test=%_test_data)
     - Parameters
       - files: The file(s) that the classifier will be trained on. Can be a single file or an array of files.
       - method: String: The specific classifier method that will be used. Potential values are as follows:
         - nb: Naïve Bayes
         - lr: Logistic Regression
-        - tc: Tree Classifier
+        - tree: Tree Classifier
         - svm: SVM
       - test: int : Pulls aside a percentage of the data in files to use as test data. Prints a measure of accuracy for the trained classifier. 
     - Returns
