@@ -53,21 +53,21 @@ When passing multiple files to train it’s important that the primary determina
 ## Method List
 
  - train(files, method=”classifier_method”, test=%_test_data)
-  - Parameters
-    - files: The file(s) that the classifier will be trained on. Can be a single file or an array of files.
-    - method: String: The specific classifier method that will be used. Potential values are as follows:
-      - nb: Naïve Bayes
-      - lr: Logistic Regression
-      - tc: Tree Classifier
-      - svm: SVM
-    - test: int : Pulls aside a percentage of the data in files to use as test data. Prints a measure of accuracy for the trained classifier. 
-  - Returns
-    - A classifier object, trained on files using the specified method.
-- classify(items, classifier=[classifier])
-  - Parameters
-    - items: The String(s) that the classifier will attempt to classify. Can be a single String or an array of Strings.
-    - classifier:  A trained classifier (returned via train).
-  - Returns
-    - A String (or array of Strings if items was plural) representing the predicted value(s).
+    - Parameters
+      - files: The file(s) that the classifier will be trained on. Can be a single file or an array of files.
+      - method: String: The specific classifier method that will be used. Potential values are as follows:
+        - nb: Naïve Bayes
+        - lr: Logistic Regression
+        - tc: Tree Classifier
+        - svm: SVM
+      - test: int : Pulls aside a percentage of the data in files to use as test data. Prints a measure of accuracy for the trained classifier. 
+    - Returns
+      - A classifier object, trained on files using the specified method.
+  - classify(items, classifier=[classifier])
+    - Parameters
+      - items: The String(s) that the classifier will attempt to classify. Can be a single String or an array of Strings.
+      - classifier:  A trained classifier (returned via train).
+    - Returns
+      - A String (or array of Strings if items was plural) representing the predicted value(s).
 
 
