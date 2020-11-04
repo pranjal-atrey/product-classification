@@ -61,8 +61,8 @@ When passing multiple files to train it’s important that the primary determina
       - tc: Tree Classifier
       - svm: SVM
     - test: int : Pulls aside a percentage of the data in files to use as test data. Prints a measure of accuracy for the trained classifier. 
- - Returns
-  - A classifier object, trained on files using the specified method.
+  - Returns
+    - A classifier object, trained on files using the specified method.
 - classify(items, classifier=[classifier])
   - Parameters
     - items: The String(s) that the classifier will attempt to classify. Can be a single String or an array of Strings.
