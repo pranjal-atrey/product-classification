@@ -1,11 +1,12 @@
 import csv
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
-from sklearn import svm
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn import metrics, svm
 import random as rand
 
 def concat_files(files):
@@ -47,17 +48,17 @@ def train(f, method, *args, **kwargs):
                     testreader = csv.reader(testfile)
                     for line in testreader:
                         index = int(line[0])
-                        testcats.append(subcats.pop(index))
+                        testcats.append(cats.pop(index))
                         testvalues.append(values.pop(index))
                 print(len(testcats), 'data items withheld for testing...')
             else:
                 # Select the random percentage of test data, order it in reverse order, and append/pop accordingly
-                rns = sorted(rand.sample(range(len(subcats)), int(len(subcats) * (test/100)) + 1), reverse=True)
+                rns = sorted(rand.sample(range(len(cats)), int(len(cats) * (test/100)) + 1), reverse=True)
                 for r in rns:
-                    testcats.append(subcats.pop(r))
+                    testcats.append(cats.pop(r))
                     testvalues.append(values.pop(r))
                 print(len(testcats),'data items withheld for testing...')
-    
+        
         count_vect = CountVectorizer()
         # This is where the bag of words is created:
         # Replace values with whatever you want to tokenize
@@ -66,23 +67,75 @@ def train(f, method, *args, **kwargs):
         # Fit estimator to the data and transform count-matrix to tf-idf representation
         tf_transformer = TfidfTransformer()
         train_tf = tf_transformer.fit_transform(vectorized)
-        # Train the classifier
-        classifier = MultinomialNB().fit(vectorized, subcats)
 
-        cw = {
-            'classifier': classifier,
-            'count_vect': count_vect,
-            'tft': tf_transformer,
-            'acc': None
-        }
+        if method == 'nb':
+            # Train the classifier
+            cw['classifier'] = MultinomialNB().fit(vectorized, cats)
+
+        elif method == 'lr':
+            cw['classifier'] = LogisticRegression(max_iter = 10000).fit(vectorized, cats)
+
+            # Fit the test data
+            newcounts = count_vect.transform(testvalues)
+            new_tfidf = tf_transformer.transform(newcounts)
+                
+            #Predict the test data's category
+            predicted = cw['classifier'].predict(new_tfidf)
+                
+            # Display classifier accuracy
+            cw['testacc'] = int(np.mean(predicted == testcats)*100)
+
+        elif method == 'tree':
+            
+            #split dataset in features and target variable
+	        #feature_cols = ['category', 'subcategory', 'name', 'current_price', 'raw_price']
+            X = vectorized #Features
+            y = cats #Target variable
+
+	        # Split dataset into training set and test set
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test, random_state=1) # 80% training and 20% test
+
+	        # Create Decision Tree classifer object
+            cw['classifier'] = DecisionTreeClassifier()
+
+	        # Train Decision Tree Classifer
+            cw['classifier'] = cw['classifier'].fit(X_train,y_train)
+
+	        #Predict the response for test dataset
+            y_pred = cw['classifier'].predict(X_test)
+
+	        # Model Accuracy, how often is the classifier correct?
+            cw['testacc'] = int(metrics.accuracy_score(y_test, y_pred) * 100)
+
+        elif method == 'svm':
+
+            # starts running the SVM classifier
+            clf = svm.SVC(kernel = 'linear') # Linear Kernel
+            cw['classifier'] = clf.fit(vectorized, cats)
+
+            # Fit the test data
+            newcounts = count_vect.transform(testvalues)
+            new_tfidf = tf_transformer.transform(newcounts)
+                
+            #Predict the test data's category
+            predicted = cw['classifier'].predict(new_tfidf)
+                
+            # Display classifier accuracy
+            cw['testacc'] = int(np.mean(predicted == testcats)*100)
+        else:
+            print('Must enter an acceptable method')
+            return
+
+        cw['count_vect'] = count_vect
+        cw['tft'] = tf_transformer
 
         if test:
             # Fit the test data
             newcounts = count_vect.transform(testvalues)
             new_tfidf = tf_transformer.transform(newcounts)
             #Predict the test data's category
-            predicted = classifier.predict(new_tfidf)
-            # Display classifier accuracy
+            predicted = cw['classifier'].predict(new_tfidf)
+            # Set classifier accuracy
             acc = int(np.mean(predicted == testcats)*100)
             cw['acc'] = acc
 
