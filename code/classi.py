@@ -29,8 +29,10 @@ def train():
         return
 
     test = test_name.get()
-    if isinstance(test, int) and not (test > 0 and test < 99):
-        print("You must enter an integer between 1% and 99%. Please try again.")
+    if not test.endswith('.csv'):
+        test = int(test)
+        if not (test > 0 and test < 99):
+            print("You must enter an integer between 1% and 99%. Please try again.")
 
     # opens the dataset
     with open(file, encoding='utf-8') as f:
@@ -53,20 +55,20 @@ def train():
         
         # If test is an int, randomly takes that % of the total data and withholds it for testing
         if isinstance(test, int):
-            rns = sorted(rand.sample(range(len(subcats)), int(len(subcats) * (test/100)) + 1), reverse=True)
+            rns = sorted(rand.sample(range(len(cats)), int(len(cats) * (test/100)) + 1), reverse=True)
             for r in rns:
-                    testcats.append(subcats.pop(r))
+                    testcats.append(cats.pop(r))
                     testvalues.append(values.pop(r))
+            print(f"{len(testcats)} data items ({test}%) withheld for testing...")
         # If test is a String, assumes it is a filename, reads the indices from that file, and pops those indices from the training arrays to the test arrays
         elif isinstance(test, str):
             with open(test, encoding='utf-8') as testfile:
                     testreader = csv.reader(testfile)
                     for line in testreader:
                         index = int(line[0])
-                        testcats.append(subcats.pop(index))
+                        testcats.append(cats.pop(index))
                         testvalues.append(values.pop(index))
-
-        print(f"{len(testcats)} data items ({test}%) withheld for testing...")
+            print(f"{len(testcats)} data items withheld from {test} for testing...")
 
         # creates instance of Count Vectorizer
         count_vect = CountVectorizer()
@@ -218,7 +220,7 @@ interface.geometry("420x550")
 # create variables that will be used to grab data from UI
 file_name = tk.StringVar()
 product_name = tk.StringVar()
-test_name = tk.IntVar()
+test_name = tk.StringVar()
 method_name = tk.IntVar()
 
 # create name at top
@@ -234,7 +236,7 @@ label_product = tk.Label(interface, text = "Product to Classify", font = ("Arial
 entry_product = tk.Entry(interface, width = 30, textvariable = product_name).grid(ipady = 5, row = 5, column = 1)
 
 # create row for entering the test percentage
-label_test = tk.Label(interface, text = "Testing Percentage", font = ("Arial", 16)).grid(pady = (10, 0), row = 7, column = 1)
+label_test = tk.Label(interface, text = "Testing Parameter", font = ("Arial", 16)).grid(pady = (10, 0), row = 7, column = 1)
 entry_test = tk.Entry(interface, width = 30, textvariable = test_name).grid(ipady = 5, row = 8, column = 1)
 
 # create the radio button options for the classifier methods
