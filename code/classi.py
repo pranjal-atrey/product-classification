@@ -28,20 +28,16 @@ def train():
         print("You entered an invalid file path. Please try again.")
         return
 
-    # sees if the user put a valid test percentage (between 1 and 99)
-    try:
-        test = test_name.get()
-        if (test < 1) or (test > 99):
-            raise Exception
-    except:
+    test = test_name.get()
+    if isinstance(test, int) and not (test > 0 and test < 99):
         print("You must enter an integer between 1% and 99%. Please try again.")
-        return
 
     # opens the dataset
     with open(file, encoding='utf-8') as f:
         # cleans out arrays for every iteration
-        pridet.clear()
-        testpridet.clear()
+        cats.clear()
+        subcats.clear()
+        testcats.clear()
         values.clear()
         testvalues.clear()
 
@@ -51,15 +47,26 @@ def train():
 
         # Currently just pulls two elements (i.e. the large categories and the product names)
         for line in reader:
-            pridet.append(line[0])
+            cats.append(line[0])
+            subcats.append(line[1])
             values.append(line[2])
         
-        # Select random test elements
-        for r in range(int(len(pridet) * (test/100))+1):
-            randomNumber = rand.randint(0, len(pridet)-1)
-            testpridet.append(pridet.pop(randomNumber))
-            testvalues.append(values.pop(randomNumber))
-        print(f"{len(testpridet)} data items ({test}%) withheld for testing...")
+        # If test is an int, randomly takes that % of the total data and withholds it for testing
+        if isinstance(test, int):
+            rns = sorted(rand.sample(range(len(subcats)), int(len(subcats) * (test/100)) + 1), reverse=True)
+            for r in rns:
+                    testcats.append(subcats.pop(r))
+                    testvalues.append(values.pop(r))
+        # If test is a String, assumes it is a filename, reads the indices from that file, and pops those indices from the training arrays to the test arrays
+        elif isinstance(test, str):
+            with open(test, encoding='utf-8') as testfile:
+                    testreader = csv.reader(testfile)
+                    for line in testreader:
+                        index = int(line[0])
+                        testcats.append(subcats.pop(index))
+                        testvalues.append(values.pop(index))
+
+        print(f"{len(testcats)} data items ({test}%) withheld for testing...")
 
         # creates instance of Count Vectorizer
         count_vect = CountVectorizer()
@@ -74,10 +81,12 @@ def train():
 
         # Train the classifier
 
+        cw = {}
+
         if method == 1:
             
             # runs the Naive Bayes classifier and vectorizes the data
-            classifier = MultinomialNB().fit(vectorized, pridet)
+            classifier = MultinomialNB().fit(vectorized, cats)
 
             # Fit the test data
             newcounts = count_vect.transform(testvalues)
@@ -87,10 +96,11 @@ def train():
             predicted = classifier.predict(new_tfidf)
                 
             # Display classifier accuracy
-            print("Accuracy:",str(int(np.mean(predicted == testpridet)*100)) + '%')
+            print("Accuracy:",str(int(np.mean(predicted == testcats)*100)) + '%')
+            cw['testacc'] = int(np.mean(predicted == testcats)*100)
 
         elif method == 2:
-            classifier = LogisticRegression(max_iter = 10000).fit(vectorized, pridet)
+            classifier = LogisticRegression(max_iter = 10000).fit(vectorized, cats)
 
             # Fit the test data
             newcounts = count_vect.transform(testvalues)
@@ -100,14 +110,15 @@ def train():
             predicted = classifier.predict(new_tfidf)
                 
             # Display classifier accuracy
-            print(f"Accuracy: {str(int(np.mean(predicted == testpridet)*100))}%")
+            print(f"Accuracy: {str(int(np.mean(predicted == testcats)*100))}%")
+            cw['testacc'] = int(np.mean(predicted == testcats)*100)
 
         elif method == 3:
             
             #split dataset in features and target variable
 	    #feature_cols = ['category', 'subcategory', 'name', 'current_price', 'raw_price']
             X = vectorized #Features
-            y = pridet #Target variable
+            y = cats #Target variable
 
 	    # Split dataset into training set and test set
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test, random_state=1) # 80% training and 20% test
@@ -123,12 +134,13 @@ def train():
 
 	    # Model Accuracy, how often is the classifier correct?
             print(f"Accuracy: {int(metrics.accuracy_score(y_test, y_pred) * 100)}%")
+            cw['testacc'] = int(metrics.accuracy_score(y_test, y_pred) * 100)
 
         elif method == 4:
 
             # starts running the SVM classifier
             clf = svm.SVC(kernel = 'linear') # Linear Kernel
-            classifier = clf.fit(vectorized, pridet)
+            cw['classifier'] = clf.fit(vectorized, cats)
 
             # Fit the test data
             newcounts = count_vect.transform(testvalues)
@@ -138,7 +150,8 @@ def train():
             predicted = classifier.predict(new_tfidf)
                 
             # Display classifier accuracy
-            print(f"Accuracy: {str(int(np.mean(predicted == testpridet)*100))}%")
+            print(f"Accuracy: {str(int(np.mean(predicted == testcats)*100))}%")
+            cw['testacc'] = int(np.mean(predicted == testcats)*100)
 
         # creates dictionary for easy transfer of variable names
         cw = {
@@ -189,8 +202,9 @@ def classify(product, classifier, method):
 
 
 # Holds whatever it is that the classifier will differentiate on
-pridet = []
-testpridet = []
+cats = []
+subcats = []
+testcats = []
         
 # Holds the values that will be tokenized for the bag of words
 values = []
