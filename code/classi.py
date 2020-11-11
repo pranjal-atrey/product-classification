@@ -13,6 +13,9 @@ from sklearn import metrics, svm
 # method to train a classifier on a data set
 def train():
 
+    global cw
+    cw = {}
+
     # 1 = Naive Bayes
     # 2 = LR
     # 3 = TREE
@@ -28,137 +31,145 @@ def train():
         print("You entered an invalid file path. Please try again.")
         return
 
-    # sees if the user put a valid test percentage (between 1 and 99)
-    try:
-        test = test_name.get()
-        if (test < 1) or (test > 99):
-            raise Exception
-    except:
-        print("You must enter an integer between 1% and 99%. Please try again.")
-        return
+    test = test_name.get()
+    if not test.endswith('.csv'):
+        test = int(test)
+        if not (test > 0 and test < 99):
+            print("You must enter an integer between 1% and 99%. Please try again.")
 
     # opens the dataset
-    with open(file, encoding='utf-8') as f:
-        # cleans out arrays for every iteration
-        pridet.clear()
-        testpridet.clear()
-        values.clear()
-        testvalues.clear()
+    f = open(file, 'r', encoding='utf-8')
+    # cleans out arrays for every iteration
+    cats.clear()
+    subcats.clear()
+    testcats.clear()
+    values.clear()
+    testvalues.clear()
 
-        # reads data set and its header
-        reader = csv.reader(f)
-        header = reader.__next__()
+    # reads data set and its header
+    reader = csv.reader(f)
+    header = reader.__next__()
 
-        # Currently just pulls two elements (i.e. the large categories and the product names)
-        for line in reader:
-            pridet.append(line[0])
-            values.append(line[2])
+    # Currently just pulls two elements (i.e. the large categories and the product names)
+    for line in reader:
+        cats.append(line[0])
+        subcats.append(line[1])
+        values.append(line[2])
+    
+    # If test is an int, randomly takes that % of the total data and withholds it for testing
+    if isinstance(test, int):
+        rns = sorted(rand.sample(range(len(cats)), int(len(cats) * (test/100)) + 1), reverse=True)
+        for r in rns:
+                testcats.append(cats.pop(r))
+                testvalues.append(values.pop(r))
+        print(f"{len(testcats)} data items ({test}%) withheld for testing...")
+    # If test is a String, assumes it is a filename, reads the indices from that file, and pops those indices from the training arrays to the test arrays
+    elif isinstance(test, str):
+        with open(test, encoding='utf-8') as testfile:
+                testreader = csv.reader(testfile)
+                for line in testreader:
+                    index = int(line[0])
+                    testcats.append(cats.pop(index))
+                    testvalues.append(values.pop(index))
+        print(f"{len(testcats)} data items withheld from {test} for testing...")
+
+    # creates instance of Count Vectorizer
+    count_vect = CountVectorizer()
+    
+    # This is where the bag of words is created:
+    # Replace values with whatever you want to tokenize
+    vectorized = count_vect.fit_transform(values)
+
+    # Fit estimator to the data and transform count-matrix to tf-idf representation
+    tf_transformer = TfidfTransformer()
+    train_tf = tf_transformer.fit_transform(vectorized)
+
+    # Train the classifier
+    if method == 1:
         
-        # Select random test elements
-        for r in range(int(len(pridet) * (test/100))+1):
-            randomNumber = rand.randint(0, len(pridet)-1)
-            testpridet.append(pridet.pop(randomNumber))
-            testvalues.append(values.pop(randomNumber))
-        print(f"{len(testpridet)} data items ({test}%) withheld for testing...")
+        # runs the Naive Bayes classifier and vectorizes the data
+        classifier = MultinomialNB().fit(vectorized, cats)
 
-        # creates instance of Count Vectorizer
-        count_vect = CountVectorizer()
+        # Fit the test data
+        newcounts = count_vect.transform(testvalues)
+        new_tfidf = tf_transformer.transform(newcounts)
+            
+        #Predict the test data's category
+        predicted = classifier.predict(new_tfidf)
+            
+        # Display classifier accuracy
+        print("Accuracy:",str(int(np.mean(predicted == testcats)*100)) + '%')
+        cw['testacc'] = int(np.mean(predicted == testcats)*100)
+
+    elif method == 2:
+        classifier = LogisticRegression(max_iter = 10000).fit(vectorized, cats)
+
+        # Fit the test data
+        newcounts = count_vect.transform(testvalues)
+        new_tfidf = tf_transformer.transform(newcounts)
+            
+        #Predict the test data's category
+        predicted = classifier.predict(new_tfidf)
+            
+        # Display classifier accuracy
+        print(f"Accuracy: {str(int(np.mean(predicted == testcats)*100))}%")
+        cw['testacc'] = int(np.mean(predicted == testcats)*100)
+
+    elif method == 3:
         
-        # This is where the bag of words is created:
-        # Replace values with whatever you want to tokenize
-        vectorized = count_vect.fit_transform(values)
+        #split dataset in features and target variable
+    #feature_cols = ['category', 'subcategory', 'name', 'current_price', 'raw_price']
+        X = vectorized #Features
+        y = cats #Target variable
 
-        # Fit estimator to the data and transform count-matrix to tf-idf representation
-        tf_transformer = TfidfTransformer()
-        train_tf = tf_transformer.fit_transform(vectorized)
+    # Split dataset into training set and test set
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test, random_state=1) # 80% training and 20% test
 
-        # Train the classifier
+    # Create Decision Tree classifer object
+        classifier = DecisionTreeClassifier()
 
-        if method == 1:
+    # Train Decision Tree Classifer
+        classifier = classifier.fit(X_train,y_train)
+
+    #Predict the response for test dataset
+        y_pred = classifier.predict(X_test)
+
+    # Model Accuracy, how often is the classifier correct?
+        print(f"Accuracy: {int(metrics.accuracy_score(y_test, y_pred) * 100)}%")
+        cw['testacc'] = int(metrics.accuracy_score(y_test, y_pred) * 100)
+
+    elif method == 4:
+
+        # starts running the SVM classifier
+        clf = svm.SVC(kernel = 'linear') # Linear Kernel
+        cw['classifier'] = clf.fit(vectorized, cats)
+
+        # Fit the test data
+        newcounts = count_vect.transform(testvalues)
+        new_tfidf = tf_transformer.transform(newcounts)
             
-            # runs the Naive Bayes classifier and vectorizes the data
-            classifier = MultinomialNB().fit(vectorized, pridet)
-
-            # Fit the test data
-            newcounts = count_vect.transform(testvalues)
-            new_tfidf = tf_transformer.transform(newcounts)
-                
-            #Predict the test data's category
-            predicted = classifier.predict(new_tfidf)
-                
-            # Display classifier accuracy
-            print("Accuracy:",str(int(np.mean(predicted == testpridet)*100)) + '%')
-
-        elif method == 2:
-            classifier = LogisticRegression(max_iter = 10000).fit(vectorized, pridet)
-
-            # Fit the test data
-            newcounts = count_vect.transform(testvalues)
-            new_tfidf = tf_transformer.transform(newcounts)
-                
-            #Predict the test data's category
-            predicted = classifier.predict(new_tfidf)
-                
-            # Display classifier accuracy
-            print(f"Accuracy: {str(int(np.mean(predicted == testpridet)*100))}%")
-
-        elif method == 3:
+        #Predict the test data's category
+        predicted = classifier.predict(new_tfidf)
             
-            #split dataset in features and target variable
-	    #feature_cols = ['category', 'subcategory', 'name', 'current_price', 'raw_price']
-            X = vectorized #Features
-            y = pridet #Target variable
+        # Display classifier accuracy
+        print(f"Accuracy: {str(int(np.mean(predicted == testcats)*100))}%")
+        cw['testacc'] = int(np.mean(predicted == testcats)*100)
 
-	    # Split dataset into training set and test set
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test, random_state=1) # 80% training and 20% test
-
-	    # Create Decision Tree classifer object
-            classifier = DecisionTreeClassifier()
-
-	    # Train Decision Tree Classifer
-            classifier = classifier.fit(X_train,y_train)
-
-	    #Predict the response for test dataset
-            y_pred = classifier.predict(X_test)
-
-	    # Model Accuracy, how often is the classifier correct?
-            print(f"Accuracy: {int(metrics.accuracy_score(y_test, y_pred) * 100)}%")
-
-        elif method == 4:
-
-            # starts running the SVM classifier
-            clf = svm.SVC(kernel = 'linear') # Linear Kernel
-            classifier = clf.fit(vectorized, pridet)
-
-            # Fit the test data
-            newcounts = count_vect.transform(testvalues)
-            new_tfidf = tf_transformer.transform(newcounts)
-                
-            #Predict the test data's category
-            predicted = classifier.predict(new_tfidf)
-                
-            # Display classifier accuracy
-            print(f"Accuracy: {str(int(np.mean(predicted == testpridet)*100))}%")
-
-        # creates dictionary for easy transfer of variable names
-        cw = {
-                'classifier': classifier,
-                'count_vect': count_vect,
-                'tft': tf_transformer
-            }
-
-        # runs if the classifier succeeded in training but the user put an invalid string / no strong
-        try:
-            product = product_name.get()
-        except:
-            print("The classifier was able to run, but the string entered is invalid.")
-
-        # attempts to classify input string into a category
-        classify(product, cw, method)
+    # creates dictionary for easy transfer of variable names
+    cw = {
+            'classifier': classifier,
+            'count_vect': count_vect,
+            'tft': tf_transformer,
+            'method': method,
+        }
 
 
 
-def classify(product, classifier, method):
+def classify():
+    # grab variables from the input boxes
+    product = product_name.get()
+    method = method_name.get()
+
     # make the product a list as the methods below require it in list form
     if not isinstance(product, list):
         c = [product]
@@ -166,11 +177,11 @@ def classify(product, classifier, method):
         c = product
     
     #Fit the String to be classified
-    v = classifier['count_vect'].transform(c)
-    n = classifier['tft'].transform(v)
+    v = cw['count_vect'].transform(c)
+    n = cw['tft'].transform(v)
     
     # Actual prediction step
-    predicted = classifier['classifier'].predict(n)
+    predicted = cw['classifier'].predict(n)
 
     # simply sets the method name for easy output
     if method == 1:
@@ -189,8 +200,10 @@ def classify(product, classifier, method):
 
 
 # Holds whatever it is that the classifier will differentiate on
-pridet = []
-testpridet = []
+cw = {}
+cats = []
+subcats = []
+testcats = []
         
 # Holds the values that will be tokenized for the bag of words
 values = []
@@ -199,39 +212,56 @@ testvalues = []
 # create the UI
 # build a blank interface
 interface = tk.Tk()
-interface.geometry("420x550")
+interface.geometry("450x550")
 
 # create variables that will be used to grab data from UI
 file_name = tk.StringVar()
 product_name = tk.StringVar()
-test_name = tk.IntVar()
+test_name = tk.StringVar()
 method_name = tk.IntVar()
+color_name = tk.StringVar()
+price_name = tk.DoubleVar()
 
 # create name at top
-label_name = tk.Label(interface, text = "Classi.py, a Simple Classifier", font = ("Arial", 24)).grid(ipady = 5, row = 0, column = 1)
+label_name = tk.Label(interface, text = "Classi.py, a Simple Classifier", font = ("Arial", 24)).grid(ipady = 5, row = 0, column = 1, columnspan = 2)
 interface.title("Classi.py")
 
-# create row for entering the file name
-label_file = tk.Label(interface, text = "File Name", font = ("Arial", 16)).grid(pady = (10, 0), row = 1, column = 1)
-entry_file = tk.Entry(interface, width = 30, textvariable = file_name).grid(ipady = 5, row = 2, column = 1)
+# create two separate columns for different data entry
+label_testing = tk.Label(interface, text = "Testing Entry", font = ("Arial", 16)).grid(pady = (10, 0), padx = (5, 0), row = 1, column = 1)
+label_data = tk.Label(interface, text = "Classify Entry", font = ("Arial", 16)).grid(pady = (10, 0), row = 1, column = 2)
 
-# create row for entering a product name
-label_product = tk.Label(interface, text = "Product to Classify", font = ("Arial", 16)).grid(pady = (10, 0), row = 4, column = 1)
-entry_product = tk.Entry(interface, width = 30, textvariable = product_name).grid(ipady = 5, row = 5, column = 1)
+# TESTING (LEFT) COLUMN DATA
+# create row for entering the file name
+label_file = tk.Label(interface, text = "CSV Data Set Path", font = ("Arial", 16)).grid(pady = (10, 0), padx = (15, 0), row = 3, column = 1)
+entry_file = tk.Entry(interface, width = 30, textvariable = file_name).grid(ipady = 5, row = 4, column = 1)
 
 # create row for entering the test percentage
-label_test = tk.Label(interface, text = "Testing Percentage", font = ("Arial", 16)).grid(pady = (10, 0), row = 7, column = 1)
-entry_test = tk.Entry(interface, width = 30, textvariable = test_name).grid(ipady = 5, row = 8, column = 1)
+label_test = tk.Label(interface, text = "Testing % Withheld", font = ("Arial", 16)).grid(pady = (10, 0), row = 5, column = 1)
+entry_test = tk.Entry(interface, width = 30, textvariable = test_name).grid(ipady = 5, row = 6, column = 1)
 
 # create the radio button options for the classifier methods
-label_method = tk.Label(interface, text = "Classifier Method", font = ("Arial", 16)).grid(pady = (25, 0), row = 10, column = 1)
-radio_nb = tk.Radiobutton(interface, text = "Naive Bayes", variable = method_name, value = 1).grid(pady = (5, 0), row = 11, column = 1)
-radio_lr = tk.Radiobutton(interface, text = "Logistic Regression", variable = method_name, value = 2).grid(pady = (5, 0), row = 12, column = 1)
-radio_tree = tk.Radiobutton(interface, text = "Tree", variable = method_name, value = 3).grid(pady = (5, 0), row = 13, column = 1)
-radio_swm = tk.Radiobutton(interface, text = "SWM", variable = method_name, value = 4).grid(pady = (5, 0), row = 14, column = 1)
+label_method = tk.Label(interface, text = "Classifier Method", font = ("Arial", 16)).grid(pady = (25, 0), row = 7, column = 1)
+radio_nb = tk.Radiobutton(interface, text = "Naive Bayes", variable = method_name, value = 1).grid(pady = (5, 0), row = 8, column = 1)
+radio_lr = tk.Radiobutton(interface, text = "Logistic Regression", variable = method_name, value = 2).grid(pady = (5, 0), row = 9, column = 1)
+radio_tree = tk.Radiobutton(interface, text = "Tree", variable = method_name, value = 3).grid(pady = (5, 0), row = 10, column = 1)
+radio_swm = tk.Radiobutton(interface, text = "SWM", variable = method_name, value = 4).grid(pady = (5, 0), row = 11, column = 1)
+
+button_train = tk.Button(interface, text = "Train Data", command = train, width = 15, height = 2).grid(pady = (50, 0), row = 12, column = 1)
+
+# CLASSIFYING (RIGHT) COLUMN DATA
+# create row for entering a product name
+label_product = tk.Label(interface, text = "Product Description", font = ("Arial", 16)).grid(pady = (10, 0), padx = 10, row = 3, column = 2)
+entry_product = tk.Entry(interface, width = 30, textvariable = product_name).grid(ipady = 5, row = 4, column = 2)
+
+label_color = tk.Label(interface, text = "Product Color", font = ("Arial", 16)).grid(pady = (10, 0), row = 5, column = 2)
+entry_color = tk.Entry(interface, width = 30, textvariable = color_name).grid(ipady = 5, row = 6, column = 2)
+
+label_price = tk.Label(interface, text = "Product Price", font = ("Arial", 16)).grid(pady = (10, 0), row = 7, column = 2)
+entry_price = tk.Entry(interface, width = 30, textvariable = price_name).grid(ipady = 5, row = 8, column = 2)
 
 # allow the user to submit the data to the program
-button_submit = tk.Button(interface, text = "Submit", command = train, width = 15, height = 2).grid(pady = (50, 0), row = 15, column = 1)
+button_classify = tk.Button(interface, text = "Classify", command = classify, width = 15, height = 2).grid(pady = (50, 0), row = 12, column = 2)
+
 
 # run the build infinitely until user closes out
 interface.mainloop()
