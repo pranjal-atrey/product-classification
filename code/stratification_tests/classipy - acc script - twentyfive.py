@@ -42,10 +42,31 @@ def train(file, test, method):
     
     # If test is an int, randomly takes that % of the total data and withholds it for testing
     if isinstance(test, int):
-        rns = sorted(rand.sample(range(len(subcats)), int(len(subcats) * (test/100)) + 1), reverse=True)
-        for r in rns:
-                testcats.append(subcats.pop(r))
-                testvalues.append(values.pop(r))
+	# Begin stratification implementation
+        start = 0
+        indices = []
+        currentcat = cats[0]
+        for i in range(len(cats)):
+            if cats[i] == currentcat:
+                True
+            else:
+                # Randomly select test data for the curent category and add it to the test data indices
+                for r in rand.sample(range(start, i), int((i-start) * (test/100))):
+                    indices.append(r)
+                currentcat = cats[i+1]
+                start = i
+        # Get the test percentage for the final category
+        ran = rand.sample(range(start, i), int((i-start) * (test/100)))
+        for r in ran:
+            indices.append(r)
+	
+	# Sort the indices from greatest to smallest so popping doesn't affect the overall order
+        indices = sorted(indices, reverse=True)
+        for i in indices:
+            # writer.writerow([i])
+            testcats.append(subcats.pop(i))		# If classifying on the larger category remember to change back to 'cats'
+            testvalues.append(values.pop(i))
+	
         print(f"{len(testcats)} data items ({test}%) withheld for testing...")
     # If test is a String, assumes it is a filename, reads the indices from that file, and pops those indices from the training arrays to the test arrays
     elif isinstance(test, str):
@@ -85,7 +106,7 @@ def train(file, test, method):
             
         # Display classifier accuracy
         cw['testacc'] = int(np.mean(predicted == testcats)*100)
-        print(f"Training Complete!\nThis dataset will have a {cw['testacc']}% accuracy in clasifying products!")
+        print(f"Training Complete!\nThis dataset will have a {cw['testacc']}% accuracy in classifying products!")
         print("-----------------------------")
         
 
@@ -104,7 +125,7 @@ def train(file, test, method):
             
         # Display classifier accuracy
         cw['testacc'] = int(np.mean(predicted == testcats)*100)
-        print(f"Training Complete!\nThis dataset will have a {cw['testacc']}% accuracy in clasifying products!")
+        print(f"Training Complete!\nThis dataset will have a {cw['testacc']}% accuracy in classifying products!")
         print("-----------------------------")
         
 
@@ -131,7 +152,7 @@ def train(file, test, method):
 
         # Model Accuracy, how often is the classifier correct?
         cw['testacc'] = int(metrics.accuracy_score(y_test, y_pred) * 100)
-        print(f"Training Complete!\nThis dataset will have a {cw['testacc']}% accuracy in clasifying products!")
+        print(f"Training Complete!\nThis dataset will have a {cw['testacc']}% accuracy in classifying products!")
         print("-----------------------------")
 
     elif method == 4:
@@ -153,7 +174,7 @@ def train(file, test, method):
         cw['testacc'] = int(np.mean(predicted == testcats)*100)
             
         # Display classifier accuracy
-        print(f"Training Complete!\nThis dataset will have a {cw['testacc']}% accuracy in clasifying products!")
+        print(f"Training Complete!\nThis dataset will have a {cw['testacc']}% accuracy in classifying products!")
         print("-----------------------------")
 
     with open("25.txt", 'a') as file2:
