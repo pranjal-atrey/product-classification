@@ -51,12 +51,36 @@ def train(f, method, *args, **kwargs):
                         testcats.append(cats.pop(index))
                         testvalues.append(values.pop(index))
                 print(len(testcats), 'data items withheld for testing...')
-            else:
-                # Select the random percentage of test data, order it in reverse order, and append/pop accordingly
-                rns = sorted(rand.sample(range(len(cats)), int(len(cats) * (test/100)) + 1), reverse=True)
-                for r in rns:
-                    testcats.append(cats.pop(r))
-                    testvalues.append(values.pop(r))
+            elif isinstance(test, int):
+                # Stratification: Randomly selects a percentage of elements for training from *each category* (rather than a blanket percentage over the whole dataset)
+                # Commented out code is for creating csv files with indices
+
+                # with open('testgamut/testdata' + str(test) + '.csv', 'w+', encoding='utf-8', newline='') as testfile:
+                    # writer = csv.writer(testfile)
+
+                start = 0
+                indices = []
+                currentcat = cats[0]
+                for i in range(len(cats)):
+                    if cats[i] == currentcat:
+                        True
+                    else:
+                        # Get the test data for the curent category and add it to the test data indices
+                        for r in rand.sample(range(start, i), int((i-start) * (test/100))):
+                            indices.append(r)
+                        currentcat = cats[i+1]
+                        start = i
+                # Get the test percentage for the final category
+                ran = rand.sample(range(start, i), int((i-start) * (test/100)))
+                for r in ran:
+                    indices.append(r)
+
+                indices = sorted(indices, reverse=True)
+                for i in indices:
+                    # writer.writerow([i])
+                    testcats.append(cats.pop(i))
+                    testvalues.append(values.pop(i))
+
                 print(len(testcats),'data items withheld for testing...')
         
         count_vect = CountVectorizer()
@@ -93,24 +117,23 @@ def train(f, method, *args, **kwargs):
             y = cats #Target variable
 
 	        # Split dataset into training set and test set
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test, random_state=1) # 80% training and 20% test
 
 	        # Create Decision Tree classifer object
             cw['classifier'] = DecisionTreeClassifier()
 
 	        # Train Decision Tree Classifer
-            cw['classifier'] = cw['classifier'].fit(X_train,y_train)
+            cw['classifier'] = cw['classifier'].fit(vectorized,cats)
 
 	        #Predict the response for test dataset
-            y_pred = cw['classifier'].predict(X_test)
+            y_pred = cw['classifier'].predict(testvalues)
 
 	        # Model Accuracy, how often is the classifier correct?
-            cw['testacc'] = int(metrics.accuracy_score(y_test, y_pred) * 100)
+            cw['testacc'] = int(metrics.accuracy_score(testcats, y_pred) * 100)
 
         elif method == 'svm':
 
             # starts running the SVM classifier
-            clf = svm.SVC(kernel = 'linear') # Linear Kernel
+            clf = svm.SVC(kernel = 'rbf') # Linear Kernel
             cw['classifier'] = clf.fit(vectorized, cats)
 
             # Fit the test data
