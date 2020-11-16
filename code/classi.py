@@ -47,7 +47,6 @@ def train(f, method, *args, **kwargs):
                     values[len(values)-1] += ' ' + line[n]
             except Exception as e:
                 True
-            print(values[len(values)-1])    
 
         # Replace 'cats' here if you want to train on subcats
         train_on_this = subcats.copy()
