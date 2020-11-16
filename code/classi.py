@@ -41,6 +41,9 @@ def train(f, method, *args, **kwargs):
             subcats.append(line[1])
             values.append(line[2])
 
+        # Replace 'cats' here if you want to train on subcats
+        train_on_this = cats.copy()
+
         if test:
             # If a String is passed to test it's assumed that it is a filename containing a number of indices
             if isinstance(test, str):
@@ -49,27 +52,27 @@ def train(f, method, *args, **kwargs):
                     testreader = csv.reader(testfile)
                     for line in testreader:
                         index = int(line[0])
-                        testcats.append(cats.pop(index))
+                        testcats.append(train_on_this.pop(index))
                         testvalues.append(values.pop(index))
                 print(len(testcats), 'data items withheld for testing...')
             elif isinstance(test, int):
                 # Stratification: Randomly selects a percentage of elements for training from *each category* (rather than a blanket percentage over the whole dataset)
                 # Commented out code is for creating csv files with indices
 
-                # with open('testgamut/testdata' + str(test) + '.csv', 'w+', encoding='utf-8', newline='') as testfile:
-                    # writer = csv.writer(testfile)
+                # with open('amz_testgamut/testdata' + str(test) + '.csv', 'w+', encoding='utf-8', newline='') as testfile:
+                #     writer = csv.writer(testfile)
 
                 start = 0
                 indices = []
-                currentcat = cats[0]
-                for i in range(len(cats)):
-                    if cats[i] == currentcat:
+                currentcat = train_on_this[0]
+                for i in range(len(train_on_this)):
+                    if train_on_this[i] == currentcat:
                         True
                     else:
                         # Get the test data for the curent category and add it to the test data indices
                         for r in rand.sample(range(start, i), int((i-start) * (test/100))):
                             indices.append(r)
-                        currentcat = cats[i+1]
+                        currentcat = train_on_this[i+1]
                         start = i
                 # Get the test percentage for the final category
                 ran = rand.sample(range(start, i), int((i-start) * (test/100)))
@@ -79,10 +82,10 @@ def train(f, method, *args, **kwargs):
                 indices = sorted(indices, reverse=True)
                 for i in indices:
                     # writer.writerow([i])
-                    testcats.append(cats.pop(i))
+                    testcats.append(train_on_this.pop(i))
                     testvalues.append(values.pop(i))
 
-                print(len(testcats),'data items withheld for testing...')
+                    print(len(testcats),'data items withheld for testing...')
         
         count_vect = CountVectorizer()
         # This is where the bag of words is created:
@@ -96,44 +99,28 @@ def train(f, method, *args, **kwargs):
         if method == 'nb':
             # Train the classifier
             train_start = time.time()
-            cw['classifier'] = MultinomialNB(class_weight='balanced').fit(train_tf, cats)
+            cw['classifier'] = MultinomialNB().fit(train_tf, train_on_this)
             cw['train_time'] = time.time() - train_start
 
         elif method == 'lr':
             train_start = time.time()
-            cw['classifier'] = LogisticRegression(max_iter = 10000, class_weight='balanced').fit(train_tf, cats)
+            cw['classifier'] = LogisticRegression(max_iter = 10000, class_weight='balanced').fit(train_tf, train_on_this)
             cw['train_time'] = time.time() - train_start
 
         elif method == 'tree':
-            
-            #split dataset in features and target variable
-	        #feature_cols = ['category', 'subcategory', 'name', 'current_price', 'raw_price']
-            X = train_tf #Features
-            y = cats #Target variable
-
-	        # Split dataset into training set and test set
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test, random_state=1) # 80% training and 20% test
-
 	        # Create Decision Tree classifer object
             cw['classifier'] = DecisionTreeClassifier(class_weight='balanced')
-
 	        # Train Decision Tree Classifer
-            cw['classifier'] = cw['classifier'].fit(X_train,y_train)
-
-	        #Predict the response for test dataset
-            y_pred = cw['classifier'].predict(X_test)
-
-	        # Model Accuracy, how often is the classifier correct?
-            cw['testacc'] = int(metrics.accuracy_score(y_test, y_pred) * 100)
-
+            cw['classifier'] = cw['classifier'].fit(train_tf, train_on_this)
+            
         elif method == 'svm':
 
             # starts running the SVM classifier
             clf = svm.SVC(kernel = 'linear', class_weight='balanced') # Linear Kernel
             train_start = time.time()
-            cw['classifier'] = clf.fit(train_tf, cats)
+            cw['classifier'] = clf.fit(train_tf, train_on_this)
             cw['train_time'] = time.time() - train_start
-            
+
         else:
             print('Must enter an acceptable method')
             return
@@ -146,7 +133,9 @@ def train(f, method, *args, **kwargs):
             newcounts = count_vect.transform(testvalues)
             new_tfidf = tf_transformer.transform(newcounts)
             #Predict the test data's category
+            pstart = time.time()
             predicted = cw['classifier'].predict(new_tfidf)
+            cw['predict_time'] = time.time() - pstart
             # Set classifier accuracy
             acc = int(np.mean(predicted == testcats)*100)
             cw['acc'] = acc
