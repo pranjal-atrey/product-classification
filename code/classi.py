@@ -40,9 +40,17 @@ def train(f, method, *args, **kwargs):
             cats.append(line[0])
             subcats.append(line[1])
             values.append(line[2])
+            # If the dataset has additional features, adds them to values
+            try:
+                line[3]
+                for n in range(3, len(line)):
+                    values[len(values)-1] += ' ' + line[n]
+            except Exception as e:
+                True
+            print(values[len(values)-1])    
 
         # Replace 'cats' here if you want to train on subcats
-        train_on_this = cats.copy()
+        train_on_this = subcats.copy()
 
         if test:
             # If a String is passed to test it's assumed that it is a filename containing a number of indices
@@ -112,7 +120,7 @@ def train(f, method, *args, **kwargs):
             cw['classifier'] = DecisionTreeClassifier(class_weight='balanced')
 	        # Train Decision Tree Classifer
             cw['classifier'] = cw['classifier'].fit(train_tf, train_on_this)
-            
+
         elif method == 'svm':
 
             # starts running the SVM classifier
