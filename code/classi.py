@@ -94,10 +94,10 @@ def train(f, method, *args, **kwargs):
 
         if method == 'nb':
             # Train the classifier
-            cw['classifier'] = MultinomialNB().fit(vectorized, cats)
+            cw['classifier'] = MultinomialNB(class_weight='balanced').fit(vectorized, cats)
 
         elif method == 'lr':
-            cw['classifier'] = LogisticRegression(max_iter = 10000).fit(vectorized, cats)
+            cw['classifier'] = LogisticRegression(max_iter = 10000, class_weight='balanced').fit(vectorized, cats)
 
             # Fit the test data
             newcounts = count_vect.transform(testvalues)
@@ -120,7 +120,7 @@ def train(f, method, *args, **kwargs):
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test, random_state=1) # 80% training and 20% test
 
 	        # Create Decision Tree classifer object
-            cw['classifier'] = DecisionTreeClassifier()
+            cw['classifier'] = DecisionTreeClassifier(class_weight='balanced')
 
 	        # Train Decision Tree Classifer
             cw['classifier'] = cw['classifier'].fit(X_train,y_train)
@@ -134,7 +134,7 @@ def train(f, method, *args, **kwargs):
         elif method == 'svm':
 
             # starts running the SVM classifier
-            clf = svm.SVC(kernel = 'linear') # Linear Kernel
+            clf = svm.SVC(kernel = 'linear', class_weight='balanced') # Linear Kernel
             cw['classifier'] = clf.fit(vectorized, cats)
 
             # Fit the test data
