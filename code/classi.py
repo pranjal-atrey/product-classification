@@ -8,6 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics, svm
 import random as rand
+import time
 
 def concat_files(files):
     return
@@ -94,26 +95,20 @@ def train(f, method, *args, **kwargs):
 
         if method == 'nb':
             # Train the classifier
-            cw['classifier'] = MultinomialNB(class_weight='balanced').fit(vectorized, cats)
+            train_start = time.time()
+            cw['classifier'] = MultinomialNB(class_weight='balanced').fit(train_tf, cats)
+            cw['train_time'] = time.time() - train_start
 
         elif method == 'lr':
-            cw['classifier'] = LogisticRegression(max_iter = 10000, class_weight='balanced').fit(vectorized, cats)
-
-            # Fit the test data
-            newcounts = count_vect.transform(testvalues)
-            new_tfidf = tf_transformer.transform(newcounts)
-                
-            #Predict the test data's category
-            predicted = cw['classifier'].predict(new_tfidf)
-                
-            # Display classifier accuracy
-            cw['testacc'] = int(np.mean(predicted == testcats)*100)
+            train_start = time.time()
+            cw['classifier'] = LogisticRegression(max_iter = 10000, class_weight='balanced').fit(train_tf, cats)
+            cw['train_time'] = time.time() - train_start
 
         elif method == 'tree':
             
             #split dataset in features and target variable
 	        #feature_cols = ['category', 'subcategory', 'name', 'current_price', 'raw_price']
-            X = vectorized #Features
+            X = train_tf #Features
             y = cats #Target variable
 
 	        # Split dataset into training set and test set
@@ -135,17 +130,10 @@ def train(f, method, *args, **kwargs):
 
             # starts running the SVM classifier
             clf = svm.SVC(kernel = 'linear', class_weight='balanced') # Linear Kernel
-            cw['classifier'] = clf.fit(vectorized, cats)
-
-            # Fit the test data
-            newcounts = count_vect.transform(testvalues)
-            new_tfidf = tf_transformer.transform(newcounts)
-                
-            #Predict the test data's category
-            predicted = cw['classifier'].predict(new_tfidf)
-                
-            # Display classifier accuracy
-            cw['testacc'] = int(np.mean(predicted == testcats)*100)
+            train_start = time.time()
+            cw['classifier'] = clf.fit(train_tf, cats)
+            cw['train_time'] = time.time() - train_start
+            
         else:
             print('Must enter an acceptable method')
             return
