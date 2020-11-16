@@ -46,10 +46,10 @@ def train(f, method, *args, **kwargs):
                 for n in range(3, len(line)):
                     values[len(values)-1] += ' ' + line[n]
             except Exception as e:
-                True
+                True   
 
         # Replace 'cats' here if you want to train on subcats
-        train_on_this = subcats.copy()
+        train_on_this = cats.copy()
 
         if test:
             # If a String is passed to test it's assumed that it is a filename containing a number of indices
@@ -66,7 +66,7 @@ def train(f, method, *args, **kwargs):
                 # Stratification: Randomly selects a percentage of elements for training from *each category* (rather than a blanket percentage over the whole dataset)
                 # Commented out code is for creating csv files with indices
 
-                # with open('amz_testgamut/testdata' + str(test) + '.csv', 'w+', encoding='utf-8', newline='') as testfile:
+                # with open('wal_testgamut/testdata' + str(test) + '.csv', 'w+', encoding='utf-8', newline='') as testfile:
                 #     writer = csv.writer(testfile)
 
                 start = 0
@@ -92,7 +92,7 @@ def train(f, method, *args, **kwargs):
                     testcats.append(train_on_this.pop(i))
                     testvalues.append(values.pop(i))
 
-                    print(len(testcats),'data items withheld for testing...')
+                print(len(testcats),'data items withheld for testing...')
         
         count_vect = CountVectorizer()
         # This is where the bag of words is created:
@@ -118,7 +118,9 @@ def train(f, method, *args, **kwargs):
 	        # Create Decision Tree classifer object
             cw['classifier'] = DecisionTreeClassifier(class_weight='balanced')
 	        # Train Decision Tree Classifer
+            train_start = time.time()
             cw['classifier'] = cw['classifier'].fit(train_tf, train_on_this)
+            cw['train_time'] = time.time() - train_start
 
         elif method == 'svm':
 
