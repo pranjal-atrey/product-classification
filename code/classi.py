@@ -7,6 +7,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics, svm
+from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
 import random as rand
 import time
 
@@ -113,6 +114,8 @@ def train(f, method, *args, **kwargs):
             train_start = time.time()
             cw['classifier'] = LogisticRegression(max_iter = 10000, class_weight='balanced').fit(train_tf, train_on_this)
             cw['train_time'] = time.time() - train_start
+            conf_matrix(train_tf, train_on_this)
+
 
         elif method == 'tree':
 	        # Create Decision Tree classifer object
