@@ -7,7 +7,6 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics, svm
-from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
 import random as rand
 import time
 
@@ -67,31 +66,31 @@ def train(f, method, *args, **kwargs):
                 # Stratification: Randomly selects a percentage of elements for training from *each category* (rather than a blanket percentage over the whole dataset)
                 # Commented out code is for creating csv files with indices
 
-                # with open('wal_testgamut/testdata' + str(test) + '.csv', 'w+', encoding='utf-8', newline='') as testfile:
-                #     writer = csv.writer(testfile)
+                with open('testgamut/testdata' + str(test) + '.csv', 'w+', encoding='utf-8', newline='') as testfile:
+                    writer = csv.writer(testfile)
 
-                start = 0
-                indices = []
-                currentcat = train_on_this[0]
-                for i in range(len(train_on_this)):
-                    if train_on_this[i] == currentcat:
-                        True
-                    else:
-                        # Get the test data for the curent category and add it to the test data indices
-                        for r in rand.sample(range(start, i), int((i-start) * (test/100))):
-                            indices.append(r)
-                        currentcat = train_on_this[i+1]
-                        start = i
-                # Get the test percentage for the final category
-                ran = rand.sample(range(start, i), int((i-start) * (test/100)))
-                for r in ran:
-                    indices.append(r)
+                    start = 0
+                    indices = []
+                    currentcat = train_on_this[0]
+                    for i in range(len(train_on_this)):
+                        if train_on_this[i] == currentcat:
+                            True
+                        else:
+                            # Get the test data for the curent category and add it to the test data indices
+                            for r in rand.sample(range(start, i), int((i-start) * (test/100))):
+                                indices.append(r)
+                            currentcat = train_on_this[i+1]
+                            start = i
+                    # Get the test percentage for the final category
+                    ran = rand.sample(range(start, i), int((i-start) * (test/100)))
+                    for r in ran:
+                        indices.append(r)
 
-                indices = sorted(indices, reverse=True)
-                for i in indices:
-                    # writer.writerow([i])
-                    testcats.append(train_on_this.pop(i))
-                    testvalues.append(values.pop(i))
+                    indices = sorted(indices, reverse=True)
+                    for i in indices:
+                        writer.writerow([i])
+                        testcats.append(train_on_this.pop(i))
+                        testvalues.append(values.pop(i))
 
                 print(len(testcats),'data items withheld for testing...')
         
@@ -114,8 +113,6 @@ def train(f, method, *args, **kwargs):
             train_start = time.time()
             cw['classifier'] = LogisticRegression(max_iter = 10000, class_weight='balanced').fit(train_tf, train_on_this)
             cw['train_time'] = time.time() - train_start
-            conf_matrix(train_tf, train_on_this)
-
 
         elif method == 'tree':
 	        # Create Decision Tree classifer object
