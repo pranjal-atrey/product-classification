@@ -1,4 +1,5 @@
 import csv
+import sklearn
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -8,26 +9,38 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics, svm
 import random as rand
+import string
 import time
+
+# Generates a String of random characters of length 'wordlen'
+def gen_rand_word(wordlen):
+    word = ''
+    for i in range(wordlen):
+        word += rand.choice(string.ascii_letters)
+    return word
 
 def concat_files(files):
     return
 
 def train(f, method, *args, **kwargs):
-
     # Holds whatever it is that the classifier will differentiate on
     cats = []
+    subcats = []
     testcats = []
     # Holds the values that will be tokenized for the bag of words
     values = []
     testvalues = []
-    subcats = []
 
     if isinstance(f, list):
         file = concat_files(f)
     else:
         file = f
     test = kwargs.get('test', None)
+
+    # Sets the SVM kernel (if applicable)
+    svm_kernel = kwargs.get('svm_kernel', 'linear')
+    # Sets the length of the 'noise' words
+    noise_len = kwargs.get('noise_len', 0)
 
     cw = {}
 
@@ -46,7 +59,9 @@ def train(f, method, *args, **kwargs):
                 for n in range(3, len(line)):
                     values[len(values)-1] += ' ' + line[n]
             except Exception as e:
-                True   
+                True 
+            values[len(values)-1] += ' ' + gen_rand_word(noise_len)
+              
 
         # Replace 'cats' here if you want to train on subcats
         train_on_this = cats.copy()
@@ -125,7 +140,7 @@ def train(f, method, *args, **kwargs):
         elif method == 'svm':
 
             # starts running the SVM classifier
-            clf = svm.SVC(kernel = 'linear', class_weight='balanced') # Linear Kernel
+            clf = svm.SVC(kernel = svm_kernel, class_weight='balanced') # Linear Kernel
             train_start = time.time()
             cw['classifier'] = clf.fit(train_tf, train_on_this)
             cw['train_time'] = time.time() - train_start
