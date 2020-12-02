@@ -9,7 +9,7 @@ As an example, training a Naïve Bayes-based classifier on data in a file data_f
 train(data_file, "nb");
 ```
 
-The *method* parameter dictates the type of classifier that will be trained on the data; see **Which Classifier Should I Use?** for help picking a method, as well as train’s documentation for more information.
+The *method* parameter dictates the type of classifier that will be trained on the data.
 
 Including the *test* parameter allows the user to set aside a certain percentage of their data as ‘test data.’ This test data will be randomly selected from the dataset and will not contribute to the classifier’s training. Once the classifier is trained on the non-test data, it will try to classify the test data based on what it has learned. The program will then compare the classifier’s guess with the actual value for each test element and print a numerical representation of its accuracy. Bear in mind that smaller test data pools may report lower-than-actual accuracy, and larger pools mean less actual training data for the classifier. What constitutes a good value depends on the overall data size, but generally ~10-15% should yield a fair representation of accuracy. 
 
