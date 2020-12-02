@@ -44,8 +44,6 @@ category, subcategory, name, ...
   ```python
   toys, stuffed animals, “teddy bear”,, “$5”
   ```
-  
-When passing multiple files to train it’s important that the primary determinant for every file is the same; if the classifier is supposed to be recognizing/associating product categories for one dataset and prices for another it’s ultimately not likely to perform very well for either. 
 
 ## Method List
 
