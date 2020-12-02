@@ -36,17 +36,14 @@ For best results, any files passed to train should adhere to the following guide
 - The file should be a .csv file in English, with the delimiter set as “,” and the encoding set as “utf-8”.
 - The first line of each file should delineate the headers for the products contained therein. For example, a header line might look like this:
 ```python
-category, name, color, price
+category, subcategory, name, ...
 ```
-- The first header should represent the desired primary determinant (i.e. whatever you’re trying to classify items into). Every product should have a meaningful, non-null – value for this attribute (otherwise the product can’t really contribute anything to the training process).
-  - In most cases the primary determinant will be a product’s category: the classifier might be asked to place an item ‘lawn chair’ into one of a number of categories, for example.
+- The first header should represent the desired primary category, followed by a subcategory. Every product should have a meaningful, non-null – value for this attribute (otherwise the product can’t really contribute anything to the training process).
 - Every product in the file should have a value for every header. This means that even if a product doesn’t have a known value for an attribute that attribute should still be represented by an empty string or some other null value.
   - To follow the earlier example, a product without a known color would be listed as:
   ```python
-  toys, “teddy bear”,, “$5”
+  toys, stuffed animals, “teddy bear”,, “$5”
   ```
-- Attributes with units should have that unit included in their value.
-  - i.e. “toys, ‘teddy bear’,, ‘$5’” rather than “toys, ‘teddy bear’,, 5” with the header being “price ($)”
   
 When passing multiple files to train it’s important that the primary determinant for every file is the same; if the classifier is supposed to be recognizing/associating product categories for one dataset and prices for another it’s ultimately not likely to perform very well for either. 
 
