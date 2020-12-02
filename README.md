@@ -52,7 +52,7 @@ When passing multiple files to train it’s important that the primary determina
 
 ## Method List
 
- - train(files, ”classifier_method_key”, test=%_test_data)
+ - train(files, ”classifier_method_key”, test=%_test_data, svm_kernel=%_kernel_type, noise_len=%_str_len)
     - Parameters
       - files: The file(s) that the classifier will be trained on. Can be a single file or an array of files.
       - method: String: The specific classifier method that will be used. Potential values are as follows:
@@ -60,9 +60,13 @@ When passing multiple files to train it’s important that the primary determina
         - lr: Logistic Regression
         - tree: Tree Classifier
         - svm: SVM
-      - test: int : Pulls aside a percentage of the data in files to use as test data. Prints a measure of accuracy for the trained classifier. 
+      - test: 
+        - int : Pulls aside a percentage of the data in files to use as test data. Prints a measure of accuracy for the trained classifier
+        - String : Attempts to use the String as a file name, and pulls indices from that file that represent data elements to withhold for testing.
+      - kernel_type: String: Defines the kernel type to be used for the SVM classification method.
+      - noise_len: int: The length of a randomly-generated String that will be appended to the end of a product's name (used to test the classifier's robustness).
     - Returns
-      - A classifier object, trained on files using the specified method.
+      - A dictionary containing classifier objects, trained on files using the specified method (also includes the accuracy and training time for the classifier if the 'test' variable was used).
   - classify(items, classifier=[classifier])
     - Parameters
       - items: The String(s) that the classifier will attempt to classify. Can be a single String or an array of Strings.
