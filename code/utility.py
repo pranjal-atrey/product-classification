@@ -33,9 +33,11 @@ for file in os.listdir('classifiers/'):
         test = int(file.split('classifiers')[1].split('.')[0])
 
         if method != currentmethod and currentmethod:
+            # Plots a best-fit curve line
             s = UnivariateSpline(x,y)
             xs = np.linspace(1, x[len(x)-1], 100)
             ys = s(xs)
+            # To get exact values replace xs and ys with x and y, respectively
             plt.plot(xs, ys, label=currentmethod)
             x = []
             y = []
